@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -743,82 +744,438 @@ function submitForm() {
   }, 1500);
 }
 
-// ── CHATBOT IA (branché sur Claude API) ──
-const businessContexts = {
+// ════════════════════════════════════════════════════════════
+// MOTEUR DE BOT INTELLIGENT — MEETLIFY
+// Architecture : Intent Detection → Context Memory → Response Builder
+// ════════════════════════════════════════════════════════════
+
+// ── BASE DE CONNAISSANCES PAR SECTEUR ──
+const KB = {
+
   garage: {
-    name: 'Meetlify — Garage Auto Martin',
-    status: 'Assistant IA — Garage',
-    quickBtns: ["Prendre un RDV", "Nos tarifs", "Urgence panne", "Horaires"],
-    systemPrompt: `Tu es l'assistant IA du Garage Auto Martin, un garage automobile à Reims. Tu t'appelles "Assistant Meetlify".
-Ton rôle : aider les clients à prendre rendez-vous, répondre à leurs questions sur les services et tarifs, et gérer les urgences.
-Infos du garage :
-- Services : révision, vidange, pneus, freins, distribution, diagnostic électronique, contrôle technique préparatoire
-- Tarifs indicatifs : révision à partir de 89€, changement 4 pneus à partir de 199€, diagnostic 45€, batterie à partir de 79€
-- Horaires : lundi-vendredi 8h-18h30, samedi 8h30-12h30, fermé dimanche
-- Numéro d'urgence : 06 12 34 56 78
-Sois chaleureux, professionnel et concis. Réponds en français. Maximum 3-4 phrases sauf si on te demande une liste. Si le client veut un RDV, demande la prestation, le véhicule et sa disponibilité. Si urgence, donne le numéro d'urgence immédiatement.`
+    meta: { name: "Garage Auto Martin", ville: "Reims", tel: "03 26 00 12 34", urgence: "06 12 34 56 78", email: "contact@garage-martin.fr" },
+    horaires: { lundi: "8h00–18h30", mardi: "8h00–18h30", mercredi: "8h00–18h30", jeudi: "8h00–18h30", vendredi: "8h00–18h30", samedi: "8h30–12h30", dimanche: "Fermé" },
+    services: {
+      revision: { label: "Révision / Entretien", prix: "à partir de 89€", duree: "2h", detail: "Vidange huile, filtres, niveaux, freins, éclairage, pression pneus" },
+      vidange: { label: "Vidange", prix: "à partir de 49€", duree: "45min", detail: "Huile moteur + filtre à huile, toutes marques" },
+      pneus: { label: "Changement de pneus", prix: "à partir de 199€ les 4", duree: "1h", detail: "Montage, équilibrage, valve inclus. Toutes dimensions." },
+      freins: { label: "Freinage", prix: "à partir de 89€/essieu", duree: "1h30", detail: "Plaquettes, disques, liquide de frein. Garantie 2 ans." },
+      distribution: { label: "Courroie de distribution", prix: "à partir de 349€", duree: "4h", detail: "Kit complet pompe à eau incluse recommandée" },
+      diagnostic: { label: "Diagnostic électronique", prix: "45€", duree: "30min", detail: "Lecture des codes erreurs, bilan complet du véhicule" },
+      batterie: { label: "Remplacement batterie", prix: "à partir de 79€", duree: "30min", detail: "Batterie fournie + pose, toutes marques" },
+      ct: { label: "Préparation contrôle technique", prix: "39€", duree: "1h", detail: "Vérification des 133 points du contrôle technique" },
+      climatisation: { label: "Climatisation", prix: "à partir de 79€", duree: "1h", detail: "Recharge gaz, désinfection, vérification compresseur" },
+      geometrie: { label: "Géométrie / Parallélisme", prix: "à partir de 59€", duree: "1h", detail: "Réglage des trains roulants, améliore la tenue de route" },
+      embrayage: { label: "Embrayage", prix: "à partir de 450€", duree: "6h", detail: "Kit embrayage complet, garantie 1 an pièces et main d'œuvre" },
+      amortisseurs: { label: "Amortisseurs", prix: "à partir de 180€/essieu", duree: "2h", detail: "Remplacement par paire recommandé" }
+    },
+    faq: {
+      garantie: "Toutes nos réparations sont garanties 1 an pièces et main d'œuvre. Les pneus bénéficient d'une garantie 2 ans.",
+      marques: "Nous intervenons sur toutes les marques : Renault, Peugeot, Citroën, Volkswagen, Ford, Toyota, BMW, Mercedes, Audi, et bien d'autres.",
+      paiement: "Nous acceptons les paiements par carte bancaire, espèces et virement. Le paiement en 3 fois sans frais est disponible à partir de 300€.",
+      delai: "Pour les interventions courantes, nous proposons souvent le jour même ou le lendemain. Les grosses réparations sont planifiées sous 48-72h.",
+      devis: "Le devis est toujours gratuit et établi avant toute intervention. Aucun travail n'est réalisé sans votre accord.",
+      domicile: "Nous ne nous déplaçons pas à domicile, mais nous proposons un service de véhicule de courtoisie pour les interventions longues.",
+      courtesy: "Un véhicule de courtoisie est disponible gratuitement pour les révisions et réparations de plus de 3h, sur réservation.",
+      localisation: "Nous sommes situés au 12 rue des Artisans, Reims. Parking gratuit devant le garage.",
+      covid: "Le garage est ouvert et respecte toutes les mesures sanitaires. Désinfection des véhicules incluse.",
+    }
   },
+
   dentaire: {
-    name: 'Meetlify — Cabinet Delorme',
-    status: 'Assistant IA — Dentiste',
-    quickBtns: ["Prendre un RDV", "Tarifs & remboursements", "Urgence dentaire", "Horaires"],
-    systemPrompt: `Tu es l'assistant IA du Cabinet Dentaire Delorme à Lyon. Tu t'appelles "Assistant Meetlify".
-Ton rôle : gérer les rendez-vous, informer sur les soins, tarifs et remboursements, orienter les urgences.
-Infos du cabinet :
-- Soins : détartrage, caries, couronnes, implants, blanchiment, prothèses, urgences
-- Tarifs : consultation 30€ (remboursé SS 70%), détartrage 38.40€, couronnes 700-900€ (RAC 0 possible), implant à partir de 1200€
-- Secteur 1, adhère au 100% Santé
-- Horaires : lundi 9h-19h, mardi 8h30-18h, mercredi 9h-17h, jeudi 9h-19h, vendredi 8h30-17h
-- Urgences : créneaux réservés chaque matin, tel 03 20 00 12 34
-Sois rassurant, professionnel et bienveillant. Réponds en français, sois concis.`
+    meta: { name: "Cabinet Dentaire Delorme", ville: "Lyon 3ème", tel: "04 78 00 12 34", urgence: "04 78 00 12 34", email: "cabinet.delorme@gmail.com" },
+    horaires: { lundi: "9h00–19h00", mardi: "8h30–18h00", mercredi: "9h00–17h00", jeudi: "9h00–19h00", vendredi: "8h30–17h00", samedi: "9h00–12h00 (sur RDV)", dimanche: "Fermé" },
+    services: {
+      consultation: { label: "Consultation / Bilan", prix: "30€ (remboursé SS 70%)", duree: "30min", detail: "Examen complet, bilan radiologique, devis personnalisé" },
+      detartrage: { label: "Détartrage", prix: "38,40€ (remboursé SS)", duree: "45min", detail: "Détartrage ultra-sons + polissage, 1 à 2 fois par an recommandé" },
+      carie: { label: "Soin de carie", prix: "20€ à 80€", duree: "45min–1h30", detail: "Selon profondeur. Composite blanc assorti à la couleur de vos dents." },
+      couronne: { label: "Couronne céramique", prix: "700€ à 900€", duree: "2 séances", detail: "RAC 0 possible avec mutuelle 100% Santé. Durée de vie 15-20 ans." },
+      implant: { label: "Implant dentaire", prix: "à partir de 1 200€", duree: "3–6 mois", detail: "Implant titane + couronne. Résultat naturel et permanent." },
+      blanchiment: { label: "Blanchiment dentaire", prix: "350€", duree: "1h30", detail: "Gouttières sur-mesure + gel professionnel. Résultat immédiat." },
+      appareil: { label: "Appareil orthodontique", prix: "sur devis", duree: "12–24 mois", detail: "Bagues, gouttières Invisalign. Adulte et enfant." },
+      extraction: { label: "Extraction / Avulsion", prix: "30€ à 80€", duree: "30–45min", detail: "Anesthésie locale incluse. Dent de sagesse sur devis." },
+      urgence: { label: "Urgence dentaire", prix: "Créneau réservé chaque matin", duree: "30min", detail: "Douleur aiguë, abcès, dent cassée : appelez dès 8h30" },
+      gouttiere: { label: "Gouttière de protection", prix: "180€", duree: "2 séances", detail: "Pour le bruxisme (grincement de dents nocturne)" }
+    },
+    faq: {
+      remboursement: "Secteur 1 sans dépassement d'honoraires. La SS rembourse 70% des soins de base. Avec une bonne mutuelle, votre reste à charge est souvent nul (dispositif RAC 0 pour les prothèses).",
+      rac0: "Le 100% Santé couvre les couronnes, bridges et dentiers avec zéro reste à charge si votre mutuelle adhère au dispositif. Renseignez-vous auprès de votre complémentaire.",
+      anesthesie: "Toutes les interventions douloureuses sont réalisées sous anesthésie locale. Nous utilisons des techniques d'injection indolore et une crème anesthésiante avant la piqûre.",
+      enfants: "Nous recevons les enfants dès 3 ans. Un espace jeux est disponible en salle d'attente. Les soins pédiatriques sont adaptés pour mettre l'enfant à l'aise.",
+      urgence_nuit: "En dehors de nos horaires, appelez le 3237 pour trouver un dentiste de garde, ou le 15 (SAMU) en cas de détresse grave.",
+      rdv_nouveau: "Pour un premier rendez-vous, prévoyez 45 minutes pour un bilan complet. Apportez votre carte Vitale et votre carte de mutuelle.",
+      douleur: "Si vous avez peur du dentiste, parlez-en lors de votre premier appel. Nous adaptons notre approche et pouvons proposer un MEOPA (gaz hilarant) pour les patients anxieux.",
+      delai_urgence: "Les urgences (abcès, douleur intense) sont prises en charge le jour même, en général avant 9h30 sur notre créneau d'urgence quotidien."
+    }
   },
+
   restaurant: {
-    name: "Meetlify — L'Escale",
-    status: 'Assistant IA — Restaurant',
-    quickBtns: ["Réserver une table", "Notre carte / Menu", "Horaires", "Allergènes & régimes"],
-    systemPrompt: `Tu es l'assistant IA du restaurant L'Escale à Bordeaux. Tu t'appelles "Assistant Meetlify".
-Ton rôle : gérer les réservations, informer sur la carte et les menus, répondre aux questions sur les allergènes.
-Infos du restaurant :
-- Cuisine : gastronomique française, produits locaux de saison
-- Menus : Formule Déjeuner 18€ (lun-ven), Menu Découverte 35€ (3 services), Menu Prestige 58€ (5 services)
-- Plats à la carte : poissons frais 22-32€, viandes 24-38€
-- Horaires : déjeuner mar-dim 12h-14h30 / dîner mar-sam 19h-22h30 / fermé lundi et dimanche soir
-- Terrasse disponible mai-septembre
-- Végétarien, sans gluten sur demande, vegan avec préavis 24h
-- Tél réservations : 05 57 00 12 34
-Sois élégant, chaleureux et accueillant. Réponds en français, sois concis.`
+    meta: { name: "Restaurant L'Escale", ville: "Bordeaux", tel: "05 57 00 12 34", urgence: "05 57 00 12 34", email: "contact@lescale-bordeaux.fr" },
+    horaires: { lundi: "Fermé toute la journée", mardi: "12h–14h30 / 19h–22h30", mercredi: "12h–14h30 / 19h–22h30", jeudi: "12h–14h30 / 19h–22h30", vendredi: "12h–14h30 / 19h–22h30", samedi: "12h–14h30 / 19h–22h30", dimanche: "12h–14h30 uniquement" },
+    services: {
+      formule_dejeuner: { label: "Formule Déjeuner", prix: "18€", duree: "Service 12h–14h30", detail: "Entrée + plat OU plat + dessert, du mardi au vendredi" },
+      menu_decouverte: { label: "Menu Découverte", prix: "35€", duree: "Service midi et soir", detail: "3 services au choix du chef, accord mets suggéré" },
+      menu_prestige: { label: "Menu Prestige", prix: "58€", duree: "Service soir uniquement", detail: "5 services avec accord mets & vins, amuse-bouches inclus" },
+      carte: { label: "Carte", prix: "Poissons 22–32€ / Viandes 24–38€", duree: "Midi et soir", detail: "Produits locaux de saison, carte renouvelée chaque mois" },
+      privatisation: { label: "Privatisation", prix: "Sur devis", duree: "Soirée entière", detail: "Séminaires, anniversaires, mariages. Capacité 60 couverts." },
+      brunch: { label: "Brunch du dimanche", prix: "28€", duree: "10h30–13h30", detail: "Buffet salé/sucré, boissons chaudes incluses, sur réservation" },
+      terrasse: { label: "Terrasse", prix: "Même tarifs", duree: "Mai à septembre", detail: "30 couverts en terrasse, réservation recommandée en été" }
+    },
+    faq: {
+      reservation: "Nous acceptons les réservations par téléphone, email et via notre assistant. Les groupes de 8 personnes et plus nécessitent un acompte.",
+      annulation: "Les annulations sont acceptées sans frais jusqu'à 2h avant le service. Passé ce délai, un forfait de 15€/couvert peut être demandé pour les groupes.",
+      allergenes: "Notre carte indique les 14 allergènes majeurs. Nous pouvons adapter la plupart des plats. Signalez impérativement vos allergies à la réservation et au serveur.",
+      vegetarien: "Un menu végétarien est disponible à la carte. Option vegan sur demande avec 24h de préavis.",
+      parking: "Parking public Quinconces à 200m (payant). Nous validons 2h de parking pour tout repas de plus de 45€.",
+      dress_code: "Pas de code vestimentaire strict, mais une tenue correcte est appréciée pour le dîner.",
+      bebe: "Chaises hautes disponibles. Menu enfant sur demande (12€). Chauffage biberon à disposition.",
+      animaux: "Les animaux sont acceptés en terrasse uniquement.",
+      cadeau: "Bons cadeaux disponibles au restaurant ou par email, valables 1 an.",
+      retard: "Nous maintenons votre table 20 minutes. En cas de retard, prévenez-nous par téléphone."
+    }
   },
+
   coiffure: {
-    name: 'Meetlify — Salon Amélie',
-    status: 'Assistant IA — Coiffure',
-    quickBtns: ["Prendre un RDV", "Nos tarifs", "Nos prestations", "Horaires"],
-    systemPrompt: `Tu es l'assistant IA du Salon de coiffure Amélie à Toulouse. Tu t'appelles "Assistant Meetlify".
-Ton rôle : gérer les prises de rendez-vous, informer sur les prestations et tarifs.
-Infos du salon :
-- Prestations : coupes homme/femme/enfant, colorations, balayages, soins, coiffures de mariage
-- Tarifs : coupe homme 22€, femme court/mi-long 38€, femme long 46€, enfant 18€, coloration à partir de 55€, balayage à partir de 75€, soin kératine 120€
-- Horaires : mardi-vendredi 9h-19h, samedi 8h30-18h, fermé lundi et dimanche
-Sois dynamique, sympathique et enthousiaste. Réponds en français, sois concis.`
+    meta: { name: "Salon de Coiffure Amélie", ville: "Toulouse", tel: "05 61 00 12 34", urgence: "05 61 00 12 34", email: "salon.amelie@gmail.com" },
+    horaires: { lundi: "Fermé", mardi: "9h00–19h00", mercredi: "9h00–19h00", jeudi: "9h00–19h00", vendredi: "9h00–19h00", samedi: "8h30–18h00", dimanche: "Fermé" },
+    services: {
+      coupe_homme: { label: "Coupe Homme", prix: "22€", duree: "30min", detail: "Shampoing + coupe + coiffage inclus" },
+      coupe_femme_court: { label: "Coupe Femme (court/mi-long)", prix: "38€", duree: "45min", detail: "Shampoing + coupe + brushing inclus" },
+      coupe_femme_long: { label: "Coupe Femme (long)", prix: "46€", duree: "1h", detail: "Shampoing + coupe + brushing inclus" },
+      coupe_enfant: { label: "Coupe Enfant (–12 ans)", prix: "18€", duree: "25min", detail: "Coupe adaptée, shampoing inclus" },
+      coloration: { label: "Coloration gloss", prix: "à partir de 55€", duree: "1h30", detail: "Coloration ton sur ton ou couvrante, brillance intense" },
+      balayage: { label: "Balayage / Mèches", prix: "à partir de 75€", duree: "2h", detail: "Balayage naturel, californien, ou mèches classiques" },
+      ombre: { label: "Ombré Hair / Tie & Dye", prix: "à partir de 90€", duree: "2h30", detail: "Dégradé de couleur naturel et tendance" },
+      soin_keratine: { label: "Soin Kératine", prix: "120€", duree: "2h", detail: "Lissage progressif, résultat 3 mois, sans formol" },
+      lissage: { label: "Lissage Brésilien", prix: "85€", duree: "1h30", detail: "Lisse et assouplit, effet durable 2 mois" },
+      chignon: { label: "Chignon / Coiffure de mariage", prix: "à partir de 80€", duree: "1h30", detail: "Chignon, tresses, mise en plis. Essai inclus pour mariées." },
+      brushing: { label: "Brushing seul", prix: "25€", duree: "30min", detail: "Shampoing + brushing, sans coupe" },
+      meche_couleur: { label: "Couleur complète", prix: "à partir de 65€", duree: "2h", detail: "Couleur couvrante ou fantaisie sur toute la chevelure" }
+    },
+    faq: {
+      produits: "Nous utilisons exclusivement des gammes professionnelles L'Oréal Professionnel et Kérastase, respectueuses de la fibre capillaire.",
+      conseil: "Un diagnostic capillaire gratuit est proposé à chaque visite. Nous vous conseillons sur les soins adaptés à votre type de cheveux.",
+      rappel: "Un SMS de rappel est envoyé automatiquement 24h avant votre rendez-vous pour éviter les oublis.",
+      annulation: "Annulation possible jusqu'à 2h avant le RDV sans frais. Au-delà, 50% du montant peut être demandé.",
+      fidélité: "Programme fidélité : 1 point par euro dépensé. 100 points = 10€ de réduction. Carte offerte à partir du 2ème passage.",
+      mariage: "Pour les coiffures de mariage, un essai est obligatoire (inclus dans le tarif). Réservez 3 à 6 mois à l'avance.",
+      enfants: "Nous accueillons les enfants dès 2 ans avec des capes adaptées et une sélection de dessins animés.",
+      delai_coloration: "Pour une coloration, prévoyez 1h30 à 3h selon la technique. Nous vous confirmons la durée exacte à la réservation.",
+      entretien: "Pour maintenir votre couleur, nous recommandons un entretien toutes les 6 à 8 semaines."
+    }
   },
+
   kiné: {
-    name: 'Meetlify — Cabinet Kiné Ravel',
-    status: 'Assistant IA — Kinésithérapie',
-    quickBtns: ["Prendre un RDV", "Tarifs & remboursements", "Urgence / Douleur aiguë", "Nos spécialités"],
-    systemPrompt: `Tu es l'assistant IA du Cabinet de Kinésithérapie Ravel à Nantes. Tu t'appelles "Assistant Meetlify".
-Ton rôle : gérer les rendez-vous, informer sur les soins, tarifs, remboursements, et qualifier les urgences.
-Infos du cabinet :
-- Spécialités : kiné du sport, rhumatologie, rééducation périnéale, neurologie, pédiatrie, post-opératoire
-- Tarifs : séance AMK 16€ (remboursé SS 60%), bilan initial 22€. ALD = 100% prise en charge
-- Ordonnance recommandée pour remboursement. Possible sans ordonnance.
-- Horaires : lundi-vendredi, horaires sur RDV
-- Urgences : 06 98 76 54 32
-- Attention : en cas de douleur thoracique irradiant dans le bras → diriger vers le 15
-Sois rassurant, professionnel et empathique. Réponds en français, sois concis.`
+    meta: { name: "Cabinet Kiné Thomas Ravel", ville: "Nantes", tel: "02 40 00 12 34", urgence: "06 98 76 54 32", email: "cabinet.ravel@gmail.com" },
+    horaires: { lundi: "8h00–19h00", mardi: "8h00–19h00", mercredi: "8h00–12h00", jeudi: "8h00–19h00", vendredi: "8h00–18h00", samedi: "Sur RDV uniquement", dimanche: "Fermé" },
+    services: {
+      bilan: { label: "Bilan initial", prix: "22€ (remboursé SS)", duree: "1h", detail: "Évaluation complète, anamnèse, tests fonctionnels, programme personnalisé" },
+      seance: { label: "Séance classique (AMK)", prix: "16€ (remboursé SS 60%)", duree: "30min", detail: "Rééducation, mobilisation, renforcement, électrothérapie selon besoin" },
+      sport: { label: "Kiné du sport", prix: "16€", duree: "45min", detail: "Entorses, tendinites, ruptures ligamentaires, préparation physique, récupération" },
+      dos: { label: "Rééducation du dos", prix: "16€", duree: "30min", detail: "Lombalgie, hernie discale, lumbago, sciatique, scoliose" },
+      perinee: { label: "Rééducation périnéale", prix: "16€", duree: "30min", detail: "Post-partum, incontinence, descente d'organes, préparation accouchement" },
+      postop: { label: "Rééducation post-opératoire", prix: "16€", duree: "45min", detail: "Prothèse genou/hanche, ligamentoplastie, chirurgie épaule, main" },
+      neuro: { label: "Neurologie", prix: "16€", duree: "45min", detail: "AVC, hémiplégie, sclérose en plaques, Parkinson, neuropathie" },
+      pediatrie: { label: "Pédiatrie", prix: "16€", duree: "45min", detail: "Torticolis congénital, scoliose, troubles de la marche, retard moteur" },
+      domicile: { label: "Soins à domicile", prix: "Tarif majoré selon convention", duree: "45min–1h", detail: "Pour patients en perte de mobilité ou post-hospitalisation" },
+      osteo: { label: "Ostéopathie (Thomas Ravel MKDE)", prix: "60€ (non remboursé SS)", duree: "1h", detail: "Manipulation globale, crânio-sacrée, viscérale. Remboursement mutuelle selon contrat." }
+    },
+    faq: {
+      ordonnance: "Une ordonnance médicale est recommandée pour un remboursement optimal par la Sécurité Sociale. Vous pouvez venir sans ordonnance pour un bilan ou des séances d'ostéopathie.",
+      remboursement: "Les séances sont remboursées à 60% par la SS (avec ordonnance). Votre mutuelle prend en charge le reste selon votre contrat. En ALD ou maternité : prise en charge à 100%.",
+      nombre_seances: "Le nombre de séances dépend de votre pathologie. En général : 5 à 10 séances pour une entorse, 15 à 20 pour une rééducation post-op, sur prescription médicale.",
+      urgence: "Pour les urgences (torticolis bloquant, lumbago, chute récente), appelez le 06 98 76 54 32. Thomas rappelle sous 30 minutes et peut vous recevoir le jour même.",
+      urgence_cardiaque: "⚠️ En cas de douleur thoracique irradiant dans le bras gauche, appelez le 15 (SAMU) — ce n'est pas une urgence kinésithérapique.",
+      premier_rdv: "Pour votre premier rendez-vous, apportez votre ordonnance, vos imageries médicales (IRM, radio) et portez des vêtements confortables.",
+      domicile_conditions: "Les soins à domicile sont réservés aux patients en situation de dépendance ou post-hospitalisation. Une prescription médicale est nécessaire.",
+      parking: "Parking gratuit devant le cabinet. Accès PMR facilité (entrée de plain-pied, salle d'attente adaptée).",
+      mutuelle_osteo: "La plupart des mutuelles remboursent 1 à 3 séances d'ostéopathie par an. Renseignez-vous auprès de votre complémentaire."
+    }
   }
 };
 
+// ── CONTEXTE DE CONVERSATION ──
+const sessionContext = {
+  clientName: null,
+  lastIntent: null,
+  askedFor: [],
+  rdvStep: 0,
+  rdvData: {}
+};
+
+// ── DÉTECTION D'INTENTION ──
+const INTENTS = [
+  { id: 'rdv',        weight: 10, triggers: ['rdv','rendez-vous','rendez vous','réserver','réservation','book','créneau','dispo','disponible','disponibilité','prendre','planifier','fixer','slot'] },
+  { id: 'urgence',    weight: 10, triggers: ['urgent','urgence','douleur','mal','vite','maintenant','bloqué','bloquée','panne','abcès','saignement','accident','chute','cassé','cassée','perdu','gonflement','torticolis','lumbago','ne démarre','immédiatement','tout de suite','samu','appeler'] },
+  { id: 'tarif',      weight: 9,  triggers: ['tarif','prix','coût','combien','devis','facturation','payer','coûte','cher','pas cher','budget','remboursement','mutuelle','sécu','sécurité sociale','rac','gratuit','forfait','formule','menu'] },
+  { id: 'horaire',    weight: 9,  triggers: ['horaire','heure','ouvert','fermé','fermeture','ouverture','quand','lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche','week-end','week end','aujourd\'hui','demain','matin','après-midi','soir','nuit'] },
+  { id: 'service',    weight: 8,  triggers: ['service','prestation','soin','traitement','faire','proposer','proposez','offre','spécialité','spécialités','intervention','opération','réparation','révision','vidange','pneu','frein','distribution','diagnostic','batterie','contrôle technique','couronne','implant','blanchiment','détartrage','coupe','coloration','balayage','kiné','ostéo','rééducation','sport','dos','périnée'] },
+  { id: 'contact',    weight: 7,  triggers: ['téléphone','tel','numéro','appeler','email','mail','adresse','localisation','où','trouver','contact','joindre','coordonnées'] },
+  { id: 'annulation', weight: 8,  triggers: ['annuler','annulation','annulé','empêché','retard','décaler','reporter','changer','modifier','déplacer'] },
+  { id: 'garantie',   weight: 7,  triggers: ['garantie','garanti','remboursé','rembourser','problème','insatisfait','plainte','réclamation','refaire','retour'] },
+  { id: 'paiement',   weight: 7,  triggers: ['payer','paiement','carte','espèce','chèque','virement','fois','mensuel','facilité','échelonner'] },
+  { id: 'faq',        weight: 6,  triggers: ['question','comment','pourquoi','est-ce que','c\'est quoi','qu\'est-ce','informations','renseigner','savoir','expliquer'] },
+  { id: 'bonjour',    weight: 5,  triggers: ['bonjour','bonsoir','salut','hello','coucou','hi','bonne journée','bonne soirée','bonne nuit'] },
+  { id: 'merci',      weight: 5,  triggers: ['merci','super','parfait','génial','excellent','très bien','nickel','top','ok merci','thanks'] },
+  { id: 'aurevoir',   weight: 5,  triggers: ['au revoir','aurevoir','bye','bonne journée','bonne soirée','à bientôt','ciao','à plus'] },
+  { id: 'nom',        weight: 4,  triggers: ['je m\'appelle','mon nom est','c\'est','prénom','nom'] }
+];
+
+function normalize(str) {
+  return str.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/['']/g, "'");
+}
+
+function detectIntent(input) {
+  const n = normalize(input);
+  const scores = {};
+  for (const intent of INTENTS) {
+    scores[intent.id] = 0;
+    for (const t of intent.triggers) {
+      if (n.includes(normalize(t))) {
+        scores[intent.id] += intent.weight;
+      }
+    }
+  }
+  // Retourner les 2 meilleures intentions
+  const sorted = Object.entries(scores)
+    .filter(([,v]) => v > 0)
+    .sort((a, b) => b[1] - a[1]);
+  return sorted.length ? sorted.map(s => s[0]) : ['default'];
+}
+
+function detectServiceKey(input, biz) {
+  const n = normalize(input);
+  const services = KB[biz].services;
+  for (const [key, svc] of Object.entries(services)) {
+    const label = normalize(svc.label);
+    if (n.includes(key) || n.includes(label)) return key;
+    if (svc.detail && n.includes(normalize(svc.detail.substring(0, 15)))) return key;
+  }
+  return null;
+}
+
+function extractName(input) {
+  const patterns = [
+    /je m['']appelle ([A-ZÀ-Ÿa-zà-ÿ\-]+)/i,
+    /mon (prénom|nom) est ([A-ZÀ-Ÿa-zà-ÿ\-]+)/i,
+    /c['']est ([A-ZÀ-Ÿa-zà-ÿ\-]+)/i,
+    /^([A-ZÀ-Ÿ][a-zà-ÿ\-]+)$/
+  ];
+  for (const p of patterns) {
+    const m = input.match(p);
+    if (m) return m[m.length - 1];
+  }
+  return null;
+}
+
+// ── CONSTRUCTEUR DE RÉPONSES ──
+function buildResponse(intents, input, bizKey) {
+  const biz = KB[bizKey];
+  const meta = biz.meta;
+  const intent = intents[0];
+  const n = normalize(input);
+
+  // Détection du prénom
+  const nameFound = extractName(input);
+  if (nameFound) sessionContext.clientName = nameFound;
+  const greet = sessionContext.clientName ? `${sessionContext.clientName}, ` : '';
+
+  // ── BONJOUR ──
+  if (intent === 'bonjour') {
+    sessionContext.lastIntent = 'bonjour';
+    const hours = new Date().getHours();
+    const salut = hours < 18 ? 'Bonjour' : 'Bonsoir';
+    return `${salut} ! 👋 Je suis l'assistant de **${meta.name}**. Je peux vous aider pour :\n\n📅 Prendre un rendez-vous\n💰 Connaître nos tarifs\n🕐 Consulter nos horaires\n📞 Nous contacter\n\nQue puis-je faire pour vous ?`;
+  }
+
+  // ── MERCI ──
+  if (intent === 'merci') {
+    return `Avec plaisir ${greet}! N'hésitez pas si vous avez d'autres questions. À très bientôt ! 😊`;
+  }
+
+  // ── AU REVOIR ──
+  if (intent === 'aurevoir') {
+    return `Au revoir ${greet}! Passez une excellente journée. L'équipe de **${meta.name}** vous attend bientôt ! 👋`;
+  }
+
+  // ── URGENCE ──
+  if (intent === 'urgence') {
+    sessionContext.lastIntent = 'urgence';
+    if (bizKey === 'garage') {
+      if (n.includes('panne') || n.includes('ne demarre') || n.includes('bloque')) {
+        return `🚨 **Urgence panne détectée !**\n\nVotre sécurité est la priorité. Notre numéro d'urgence est le **${meta.urgence}** (7j/7).\n\nSi vous êtes sur autoroute → feux de détresse + **0800 100 200** (gratuit).\nSi vous êtes en ville → on envoie notre dépanneur sous 45 min dans un rayon de 30 km.\n\nPouvez-vous m'indiquer votre localisation et décrire le problème ?`;
+      }
+      return `🚨 Que se passe-t-il exactement ? Panne, accident, voyant allumé ? Donnez-moi plus de détails pour vous orienter au mieux. Notre urgence : **${meta.urgence}**.`;
+    }
+    if (bizKey === 'dentaire') {
+      if (n.includes('abces') || n.includes('gonfle') || n.includes('saigne')) {
+        return `🚨 **Urgence dentaire !** Un abcès ou un saignement important nécessite une prise en charge rapide.\n\nAppellez-nous maintenant : **${meta.urgence}**\n\nUn créneau urgence est réservé **chaque matin avant 9h30**. En dehors de nos horaires, contactez le **3237** (dentiste de garde).`;
+      }
+      return `Je comprends que vous souffrez. Depuis quand avez-vous cette douleur ? Est-elle pulsatile, continue, ou déclenchée par le chaud/froid ?\n\nPour une urgence, appelez le **${meta.urgence}** — nous avons un créneau réservé chaque matin.`;
+    }
+    if (bizKey === 'kiné') {
+      if (n.includes('thoracique') || n.includes('bras gauche') || n.includes('infarctus')) {
+        return `⚠️ **Attention !** Une douleur thoracique irradiant dans le bras peut être un signe cardiaque.\n\n🆘 Appelez le **15 (SAMU)** immédiatement — ce n'est pas une urgence kinésithérapique.\n\nNe tardez pas, votre santé est prioritaire.`;
+      }
+      return `🚨 Pour une douleur aiguë (torticolis bloquant, lumbago, chute), appelez le **${meta.urgence}**.\n\nThomas rappelle sous 30 minutes et peut vous recevoir **aujourd'hui si nécessaire**.`;
+    }
+    if (bizKey === 'restaurant') {
+      return `Je comprends votre situation. Pour une annulation ou un problème urgent, contactez-nous directement au **${meta.tel}**. Nous ferons notre possible pour vous accommoder !`;
+    }
+    return `Pour toute urgence, contactez-nous directement au **${meta.urgence}**. Nous sommes là pour vous aider !`;
+  }
+
+  // ── HORAIRES ──
+  if (intent === 'horaire') {
+    sessionContext.lastIntent = 'horaire';
+    const h = biz.horaires;
+    const jours = Object.entries(h).map(([j, v]) => {
+      const emoji = v === 'Fermé' || v.includes('Fermé') ? '🔴' : '🟢';
+      return `${emoji} **${j.charAt(0).toUpperCase() + j.slice(1)}** : ${v}`;
+    }).join('\n');
+    return `🕐 **Horaires de ${meta.name} :**\n\n${jours}\n\nSouhaitez-vous prendre un rendez-vous ?`;
+  }
+
+  // ── CONTACT / LOCALISATION ──
+  if (intent === 'contact') {
+    sessionContext.lastIntent = 'contact';
+    return `📞 **Coordonnées de ${meta.name} :**\n\n📱 Téléphone : **${meta.tel}**\n📧 Email : **${meta.email}**\n📍 Ville : **${meta.ville}**\n\nVous pouvez aussi prendre rendez-vous directement ici — je gère votre agenda ! Que souhaitez-vous faire ?`;
+  }
+
+  // ── ANNULATION ──
+  if (intent === 'annulation') {
+    sessionContext.lastIntent = 'annulation';
+    if (bizKey === 'restaurant') {
+      return `Pas de problème ! Les annulations sont gratuites jusqu'à **2h avant le service**.\n\nPouvez-vous me donner votre nom et la date de votre réservation ? Je la modifie ou l'annule immédiatement. Vous pouvez aussi nous appeler au **${meta.tel}**.`;
+    }
+    return `Pas de souci ${greet}! Pour annuler ou reporter votre rendez-vous, donnez-moi votre nom et la date prévue. Ou appelez-nous au **${meta.tel}**.\n\nNous acceptons les annulations jusqu'à 2h avant, sans frais.`;
+  }
+
+  // ── PAIEMENT ──
+  if (intent === 'paiement') {
+    sessionContext.lastIntent = 'paiement';
+    if (bizKey === 'garage') {
+      return `💳 **Moyens de paiement acceptés :**\n\n✅ Carte bancaire (CB, Visa, Mastercard)\n✅ Espèces\n✅ Virement bancaire\n✅ **Paiement en 3x sans frais** à partir de 300€\n\nLe devis est toujours gratuit et établi avant toute intervention. Aucun travail sans votre accord ! 👍`;
+    }
+    if (bizKey === 'dentaire') {
+      return `💳 **Paiement et remboursements :**\n\nNous acceptons carte bancaire, espèces et chèques.\n\n📋 **Remboursements :**\n• Sécurité Sociale : 70% des soins de base\n• Mutuelle : complète souvent jusqu'à 100%\n• Dispositif RAC 0 disponible pour les prothèses\n\nNous effectuons le tiers-payant avec votre carte Vitale.`;
+    }
+    return `Nous acceptons les paiements par carte bancaire, espèces et chèque. Pour plus d'informations, appelez-nous au **${meta.tel}**.`;
+  }
+
+  // ── TARIFS ──
+  if (intent === 'tarif') {
+    sessionContext.lastIntent = 'tarif';
+    // Chercher un service spécifique mentionné
+    const svcKey = detectServiceKey(input, bizKey);
+    if (svcKey && biz.services[svcKey]) {
+      const svc = biz.services[svcKey];
+      return `💰 **${svc.label}**\n\n💵 Prix : **${svc.prix}**\n⏱️ Durée : ${svc.duree}\n📋 ${svc.detail}\n\nSouhaitez-vous prendre rendez-vous pour cette prestation ?`;
+    }
+    // Tarifs généraux
+    const topServices = Object.values(biz.services).slice(0, 6);
+    const list = topServices.map(s => `• **${s.label}** — ${s.prix}`).join('\n');
+    return `💰 **Tarifs principaux de ${meta.name} :**\n\n${list}\n\n_Tous les tarifs sont indicatifs selon votre situation._\n\nDites-moi quelle prestation vous intéresse pour un tarif précis !`;
+  }
+
+  // ── SERVICES ──
+  if (intent === 'service') {
+    sessionContext.lastIntent = 'service';
+    const svcKey = detectServiceKey(input, bizKey);
+    if (svcKey && biz.services[svcKey]) {
+      const svc = biz.services[svcKey];
+      return `✅ **${svc.label}**\n\n💵 Tarif : ${svc.prix}\n⏱️ Durée estimée : ${svc.duree}\n📋 ${svc.detail}\n\nVoulez-vous prendre rendez-vous pour cette prestation ?`;
+    }
+    const allServices = Object.values(biz.services).map(s => `• ${s.label}`).join('\n');
+    return `🔧 **Nos prestations chez ${meta.name} :**\n\n${allServices}\n\nQuelle prestation vous intéresse ? Je vous donne les détails et le tarif !`;
+  }
+
+  // ── PRISE DE RDV (flow multi-étapes) ──
+  if (intent === 'rdv' || sessionContext.rdvStep > 0) {
+    sessionContext.lastIntent = 'rdv';
+
+    if (sessionContext.rdvStep === 0) {
+      sessionContext.rdvStep = 1;
+      const svcKey = detectServiceKey(input, bizKey);
+      if (svcKey) {
+        sessionContext.rdvData.service = KB[bizKey].services[svcKey].label;
+        sessionContext.rdvStep = 2;
+        return `Super ${greet}! J'ai noté : **${sessionContext.rdvData.service}**.\n\nQuel jour vous convient le mieux ? Et avez-vous une préférence matin ou après-midi ?`;
+      }
+      const servicesList = Object.values(biz.services).slice(0, 5).map((s, i) => `${i+1}. ${s.label} (${s.prix})`).join('\n');
+      return `Avec plaisir ${greet}! Pour quelle prestation souhaitez-vous un rendez-vous ?\n\n${servicesList}\n\n…ou décrivez simplement votre besoin !`;
+    }
+
+    if (sessionContext.rdvStep === 1) {
+      const svcKey = detectServiceKey(input, bizKey);
+      if (svcKey) {
+        sessionContext.rdvData.service = KB[bizKey].services[svcKey].label;
+      } else {
+        sessionContext.rdvData.service = input;
+      }
+      sessionContext.rdvStep = 2;
+      return `Noté : **${sessionContext.rdvData.service}**. \n\nQuel jour vous convient le mieux cette semaine ou la semaine prochaine ? Matin ou après-midi de préférence ?`;
+    }
+
+    if (sessionContext.rdvStep === 2) {
+      sessionContext.rdvData.moment = input;
+      sessionContext.rdvStep = 3;
+      return `Je note votre préférence : **${input}**.\n\nPour finaliser, quel est votre prénom (et numéro de téléphone pour la confirmation SMS) ?`;
+    }
+
+    if (sessionContext.rdvStep === 3) {
+      const name = extractName(input);
+      if (name) sessionContext.clientName = name;
+      sessionContext.rdvData.contact = input;
+      sessionContext.rdvStep = 0;
+      const confirmName = sessionContext.clientName || 'vous';
+      return `✅ **Demande de rendez-vous enregistrée !**\n\n📋 **Récapitulatif :**\n• Prestation : ${sessionContext.rdvData.service || 'à préciser'}\n• Moment souhaité : ${sessionContext.rdvData.moment || 'flexible'}\n• Contact : ${sessionContext.rdvData.contact}\n\nL'équipe de **${meta.name}** vous confirmera votre créneau par SMS sous **1h** !\n\nUne question supplémentaire, ${confirmName} ? 😊`;
+    }
+  }
+
+  // ── FAQ / QUESTIONS GÉNÉRALES ──
+  const faq = biz.faq;
+  for (const [key, answer] of Object.entries(faq)) {
+    if (n.includes(normalize(key)) || intents.includes(key)) {
+      return `ℹ️ ${answer}\n\nAutre question ?`;
+    }
+  }
+  // Correspondances FAQ étendues
+  if (n.includes('garanti')) return `ℹ️ ${faq.garantie || faq.remboursement || 'Nos prestations sont garanties. Contactez-nous pour plus de détails au ' + meta.tel}`;
+  if (n.includes('paiement') || n.includes('payer') || n.includes('carte')) {
+    return `ℹ️ ${faq.paiement || 'Nous acceptons carte bancaire, espèces et chèque. Appelez-nous au ' + meta.tel + ' pour plus d\'infos.'}`;
+  }
+  if (n.includes('parking') || n.includes('adresse') || n.includes('ou') || n.includes('trouver')) {
+    return `📍 ${faq.parking || faq.localisation || 'Nous sommes situés à ' + meta.ville + '. Contactez-nous au ' + meta.tel + ' pour l\'adresse exacte.'}`;
+  }
+  if (n.includes('enfant') || n.includes('bebe') || n.includes('petit')) {
+    return `👶 ${faq.enfants || faq.bebe || faq.enfants || 'Nous accueillons les enfants. Appelez-nous au ' + meta.tel + ' pour plus d\'informations.'}`;
+  }
+  if (n.includes('annul') || n.includes('retard')) {
+    return `📅 ${faq.annulation || 'Annulation possible jusqu\'à 2h avant le rendez-vous. Appelez-nous au ' + meta.tel + '.'}`;
+  }
+
+  // ── RÉPONSE PAR DÉFAUT CONTEXTUELLE ──
+  const defaults = [
+    `Bonjour ${greet}! Je suis l'assistant de **${meta.name}**. Je peux vous aider pour une **prise de RDV**, connaître nos **tarifs**, nos **horaires**, ou répondre à vos questions. Que souhaitez-vous ? 😊`,
+    `Hmm, je veux m'assurer de bien vous répondre ! Pouvez-vous préciser votre demande ?\n\n• 📅 Prendre un rendez-vous\n• 💰 Connaître les tarifs\n• 🕐 Voir les horaires\n• 📞 Nous contacter\n• 🚨 Urgence`,
+    `Je suis là pour vous aider ! Dites-moi si vous souhaitez un **rendez-vous**, des infos sur nos **services**, ou autre chose. L'équipe de ${meta.name} sera ravie de vous accueillir ! 🙌`
+  ];
+  return defaults[Math.floor(Math.random() * defaults.length)];
+}
+
+// ── INTERFACE CHAT ──
+const businessQuickBtns = {
+  garage:     ["Prendre un RDV", "Nos tarifs", "Urgence panne", "Horaires"],
+  dentaire:   ["Prendre un RDV", "Tarifs & remboursements", "Urgence dentaire", "Horaires"],
+  restaurant: ["Réserver une table", "Voir le menu", "Horaires", "Allergènes"],
+  coiffure:   ["Prendre un RDV", "Nos tarifs", "Nos prestations", "Horaires"],
+  kiné:       ["Prendre un RDV", "Tarifs & remboursements", "Urgence douleur", "Nos spécialités"]
+};
+
 let currentBusiness = 'garage';
-let conversationHistory = [];
 
 function getTime() {
   const now = new Date();
@@ -831,7 +1188,6 @@ function addMessage(text, isUser) {
   msg.className = 'msg ' + (isUser ? 'msg-user' : 'msg-ai');
   const formatted = text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/\n/g, '<br>');
   msg.innerHTML = `
     <div class="msg-sender">${isUser ? 'Vous' : 'Assistant Meetlify'}</div>
@@ -863,27 +1219,7 @@ function removeThinking() {
   if (el) el.remove();
 }
 
-async function callClaudeAPI(userMessage) {
-  const biz = businessContexts[currentBusiness];
-  conversationHistory.push({ role: 'user', content: userMessage });
-
-  const response = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      system: biz.systemPrompt,
-      messages: conversationHistory
-    })
-  });
-
-  if (!response.ok) throw new Error('API error');
-  const data = await response.json();
-  const reply = data.reply;
-  conversationHistory.push({ role: 'assistant', content: reply });
-  return reply;
-}
-
-async function sendMessage(text) {
+function sendMessage(text) {
   const input = document.getElementById('chatInput');
   const msg = text || input.value.trim();
   if (!msg) return;
@@ -891,23 +1227,20 @@ async function sendMessage(text) {
   addMessage(msg, true);
   showThinking();
 
-  // Simuler un délai de "réflexion" réaliste
-  await new Promise(r => setTimeout(r, 600));
-
-  try {
-    const reply = await callClaudeAPI(msg);
+  // Délai réaliste de "réflexion"
+  const delay = 600 + Math.random() * 700;
+  setTimeout(() => {
     removeThinking();
+    const intents = detectIntent(msg);
+    const reply = buildResponse(intents, msg, currentBusiness);
     addMessage(reply, false);
-  } catch (err) {
-    removeThinking();
-    addMessage("Je rencontre une petite difficulté de connexion. Réessayez dans un instant ou contactez-nous directement !", false);
-  }
+  }, delay);
 }
 
-function setQuickBtns(biz) {
+function setQuickBtns(bizKey) {
   const container = document.getElementById('quickBtns');
   container.innerHTML = '';
-  biz.quickBtns.forEach(label => {
+  businessQuickBtns[bizKey].forEach(label => {
     const btn = document.createElement('button');
     btn.className = 'quick-btn';
     btn.textContent = label;
@@ -916,26 +1249,36 @@ function setQuickBtns(biz) {
   });
 }
 
-async function switchBusiness(key) {
+const bizNames = {
+  garage:     'Meetlify — Garage Auto Martin',
+  dentaire:   'Meetlify — Cabinet Delorme',
+  restaurant: "Meetlify — L'Escale",
+  coiffure:   'Meetlify — Salon Amélie',
+  kiné:       'Meetlify — Cabinet Kiné Ravel'
+};
+
+function switchBusiness(key) {
   currentBusiness = key;
-  conversationHistory = [];
+  // Reset contexte
+  sessionContext.clientName = null;
+  sessionContext.lastIntent = null;
+  sessionContext.askedFor = [];
+  sessionContext.rdvStep = 0;
+  sessionContext.rdvData = {};
+
   document.querySelectorAll('.business-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('btn-' + key).classList.add('active');
-  const biz = businessContexts[key];
-  document.getElementById('chatName').textContent = biz.name;
-  document.getElementById('chatStatus').textContent = biz.status;
+  document.getElementById('chatName').textContent = bizNames[key];
+  document.getElementById('chatStatus').textContent = 'Assistant IA actif';
   document.getElementById('chatMessages').innerHTML = '';
-  setQuickBtns(biz);
-  showThinking();
+  setQuickBtns(key);
 
-  try {
-    const welcome = await callClaudeAPI('Bonjour, présente-toi brièvement en une phrase et demande comment tu peux aider.');
+  showThinking();
+  setTimeout(() => {
     removeThinking();
-    addMessage(welcome, false);
-  } catch {
-    removeThinking();
-    addMessage(`Bonjour ! Je suis l'assistant IA de ${biz.name.replace('Meetlify — ', '')}. Comment puis-je vous aider aujourd'hui ?`, false);
-  }
+    const meta = KB[key].meta;
+    addMessage(`Bonjour ! 👋 Je suis l'assistant de **${meta.name}** à ${meta.ville}.\n\nJe peux vous aider pour :\n📅 Prendre un rendez-vous\n💰 Connaître nos tarifs\n🕐 Voir nos horaires\n📞 Nous contacter\n🚨 Gérer une urgence\n\nQue puis-je faire pour vous ?`, false);
+  }, 700);
 }
 
 // Init
