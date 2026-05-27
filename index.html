@@ -501,6 +501,7 @@
   .reveal-delay-2 { transition-delay: 0.2s; }
   .reveal-delay-3 { transition-delay: 0.3s; }
 </style>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
 
@@ -1131,7 +1132,8 @@ function buildResponse(intents, input, bizKey) {
       sessionContext.rdvData.contact = input;
       sessionContext.rdvStep = 0;
       const confirmName = sessionContext.clientName || 'vous';
-      return `✅ **Demande de rendez-vous enregistrée !**\n\n📋 **Récapitulatif :**\n• Prestation : ${sessionContext.rdvData.service || 'à préciser'}\n• Moment souhaité : ${sessionContext.rdvData.moment || 'flexible'}\n• Contact : ${sessionContext.rdvData.contact}\n\nL'équipe de **${meta.name}** vous confirmera votre créneau par SMS sous **1h** !\n\nUne question supplémentaire, ${confirmName} ? 😊`;
+      sendRdvEmail(bizKey, meta);
+      return `✅ **Demande enregistrée${confirmName ? ', ' + confirmName : ''} !**\n\n📋 **Récapitulatif :**\n• Prestation : ${sessionContext.rdvData.service || 'à préciser'}\n• Moment souhaité : ${sessionContext.rdvData.moment || 'flexible'}\n• Contact : ${sessionContext.rdvData.contact}\n\n📨 Le gérant de **${meta.name}** reçoit votre demande instantanément et vous confirme sous **1h** !\n\nUne autre question ? 😊`;
     }
   }
 
@@ -1281,7 +1283,46 @@ function switchBusiness(key) {
   }, 700);
 }
 
+
+// ── EMAILJS — ENVOI AUTOMATIQUE AU GÉRANT ──
+// 👉 Remplacez les 3 valeurs ci-dessous par vos clés EmailJS
+const service_vf8e6np
+const template_840tilp
+const wZLhpa8AdsDTpAsHT
+
+function initEmailJS() {
+  if (typeof emailjs !== 'undefined') {
+    emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+  }
+}
+
+function sendRdvEmail(bizKey, meta) {
+  if (typeof emailjs === 'undefined') return;
+  if (EMAILJS_SERVICE_ID === 'VOTRE_SERVICE_ID') return; // Pas encore configuré
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+  const templateParams = {
+    to_name:       'Gérant',
+    business_name: meta.name,
+    business_city: meta.ville,
+    client_contact: sessionContext.rdvData.contact || 'Non renseigné',
+    client_name:   sessionContext.clientName || 'Non renseigné',
+    service:       sessionContext.rdvData.service || 'Non précisé',
+    moment:        sessionContext.rdvData.moment || 'Flexible',
+    date_demande:  dateStr + ' à ' + timeStr,
+    reply_to:      meta.email
+  };
+
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+    .then(() => console.log('✅ Email RDV envoyé au gérant'))
+    .catch(err => console.warn('Email non envoyé (EmailJS non configuré):', err));
+}
+
 // Init
+initEmailJS();
 switchBusiness('garage');
 </script>
 </body>
