@@ -633,6 +633,8 @@
         <button class="business-btn" id="btn-restaurant" onclick="switchBusiness('restaurant')"><span class="business-btn-icon">🍽️</span>Restaurant</button>
         <button class="business-btn" id="btn-coiffure" onclick="switchBusiness('coiffure')"><span class="business-btn-icon">✂️</span>Salon de Coiffure</button>
         <button class="business-btn" id="btn-kiné" onclick="switchBusiness('kiné')"><span class="business-btn-icon">💆</span>Kinésithérapie</button>
+        <button class="business-btn" id="btn-plombier" onclick="switchBusiness('plombier')"><span class="business-btn-icon">🔧</span>Plomberie</button>
+        <button class="business-btn" id="btn-electricien" onclick="switchBusiness('electricien')"><span class="business-btn-icon">⚡</span>Électricien</button>
       </div>
       <div class="demo-chat">
         <div class="chat-header">
@@ -891,6 +893,60 @@ const KB = {
       domicile_conditions: "Les soins à domicile sont réservés aux patients en situation de dépendance ou post-hospitalisation. Une prescription médicale est nécessaire.",
       parking: "Parking gratuit devant le cabinet. Accès PMR facilité (entrée de plain-pied, salle d'attente adaptée).",
       mutuelle_osteo: "La plupart des mutuelles remboursent 1 à 3 séances d'ostéopathie par an. Renseignez-vous auprès de votre complémentaire."
+    }
+  },
+
+  plombier: {
+    meta: { name: "Plomberie Dupuis", ville: "Lille", tel: "03 20 00 12 34", urgence: "06 12 34 56 78", email: "contact@plomberie-dupuis.fr" },
+    horaires: { lundi: "8h00–18h00", mardi: "8h00–18h00", mercredi: "8h00–18h00", jeudi: "8h00–18h00", vendredi: "8h00–17h00", samedi: "Urgences uniquement", dimanche: "Urgences uniquement" },
+    services: {
+      fuite: { label: "Réparation fuite d'eau", prix: "à partir de 80€", duree: "1h", detail: "Fuite robinet, canalisation, joint, tuyauterie. Diagnostic inclus." },
+      debouchage: { label: "Débouchage canalisation", prix: "à partir de 90€", duree: "1h30", detail: "Évier, WC, douche, baignoire. Hydrocurage haute pression si nécessaire." },
+      chauffe_eau: { label: "Remplacement chauffe-eau", prix: "à partir de 350€", duree: "3h", detail: "Fourniture et pose. Chauffe-eau thermodynamique ou électrique." },
+      wc: { label: "Réparation WC / Toilettes", prix: "à partir de 70€", duree: "45min", detail: "Mécanisme, chasse d'eau, fuite, remplacement complet." },
+      robinetterie: { label: "Remplacement robinetterie", prix: "à partir de 60€", duree: "45min", detail: "Mitigeur, robinet, douchette. Fourniture + pose." },
+      urgence_fuite: { label: "Urgence fuite", prix: "à partir de 120€", duree: "Intervention rapide", detail: "Dégât des eaux, fuite importante. Intervention sous 1h." },
+      renovation: { label: "Rénovation salle de bain", prix: "Sur devis", duree: "3 à 7 jours", detail: "Pose baignoire, douche, lavabo, carrelage. Devis gratuit à domicile." },
+      chauffage: { label: "Entretien chauffage", prix: "à partir de 80€", duree: "1h30", detail: "Radiateurs, plancher chauffant, purge, équilibrage." },
+      adoucisseur: { label: "Pose adoucisseur d'eau", prix: "à partir de 800€", duree: "3h", detail: "Fourniture + pose + réglage. Idéal pour eau calcaire." },
+      detartrage: { label: "Détartrage chauffe-eau", prix: "à partir de 90€", duree: "1h30", detail: "Prolonge la durée de vie de votre appareil de 5 à 10 ans." }
+    },
+    faq: {
+      urgence: "Pour toute urgence (fuite importante, dégât des eaux), appelez le 06 12 34 56 78 disponible 7j/7. Intervention sous 1h dans un rayon de 30km.",
+      devis: "Le devis est gratuit et sans engagement pour tous les travaux de rénovation. Pour les petites réparations, le tarif est fixé avant intervention.",
+      garantie: "Toutes nos interventions sont garanties 1 an pièces et main d'œuvre. Nous sommes assurés en responsabilité civile professionnelle.",
+      paiement: "Carte bancaire, espèces, chèque et virement acceptés. Paiement en 3 fois sans frais à partir de 500€.",
+      assurance: "En cas de dégât des eaux, nous pouvons établir un rapport d'intervention pour votre assurance habitation.",
+      marques: "Nous travaillons avec les grandes marques : Grohe, Hansgrohe, Chaffoteaux, Atlantic, Thermor, Ideal Standard.",
+      weekend: "Des permanences urgence sont assurées le week-end. Un supplément de 30€ s'applique pour les interventions le samedi après 17h et le dimanche.",
+      deplacement: "Les frais de déplacement sont inclus dans nos tarifs pour toute intervention dans un rayon de 30km autour de Lille."
+    }
+  },
+
+  electricien: {
+    meta: { name: "Électricité Martin", ville: "Lyon", tel: "04 78 00 12 34", urgence: "06 98 76 54 32", email: "contact@electricite-martin.fr" },
+    horaires: { lundi: "8h00–18h00", mardi: "8h00–18h00", mercredi: "8h00–18h00", jeudi: "8h00–18h00", vendredi: "8h00–17h00", samedi: "Urgences uniquement", dimanche: "Urgences uniquement" },
+    services: {
+      depannage: { label: "Dépannage électrique", prix: "à partir de 80€", duree: "1h", detail: "Panne de courant, disjoncteur, court-circuit. Diagnostic complet inclus." },
+      tableau: { label: "Mise aux normes tableau électrique", prix: "à partir de 800€", duree: "1 journée", detail: "Remplacement tableau, mise aux normes NF C 15-100. Obligatoire pour vente." },
+      prise: { label: "Pose prises / interrupteurs", prix: "à partir de 50€/point", duree: "30min/point", detail: "Prises, interrupteurs, va-et-vient, USB. Toutes finitions disponibles." },
+      eclairage: { label: "Installation éclairage", prix: "à partir de 80€", duree: "1h", detail: "Spots, lustres, LED, éclairage extérieur. Conseil déco inclus." },
+      borne_recharge: { label: "Borne de recharge voiture", prix: "à partir de 900€", duree: "1 journée", detail: "Installation IRVE certifiée. Crédit d'impôt possible (jusqu'à 500€)." },
+      alarme: { label: "Installation alarme / vidéosurveillance", prix: "à partir de 400€", duree: "1 journée", detail: "Alarme intrusion, caméras IP, portier vidéo. Télésurveillance possible." },
+      domotique: { label: "Domotique / Maison connectée", prix: "Sur devis", duree: "1 à 3 jours", detail: "Volets, éclairage, chauffage connectés. Compatible Google Home et Alexa." },
+      urgence_panne: { label: "Urgence panne électrique", prix: "à partir de 120€", duree: "Intervention rapide", detail: "Panne totale, odeur de brûlé, étincelles. Intervention sous 1h." },
+      renovation: { label: "Rénovation électrique complète", prix: "Sur devis", duree: "3 à 10 jours", detail: "Refaire toute l'installation d'un logement. Devis gratuit à domicile." },
+      diag: { label: "Diagnostic électrique", prix: "80€", duree: "1h30", detail: "Contrôle complet de votre installation. Rapport détaillé fourni." }
+    },
+    faq: {
+      urgence: "Pour toute urgence électrique (odeur de brûlé, étincelles, panne totale), appelez le 06 98 76 54 32 immédiatement et coupez votre disjoncteur général. Intervention sous 1h.",
+      normes: "Nous réalisons toutes nos installations selon la norme NF C 15-100 en vigueur. Attestation de conformité Consuel fournie si nécessaire.",
+      garantie: "Toutes nos interventions sont garanties 1 an. Nous sommes qualifiés RGE Qualifelec pour les travaux d'économie d'énergie.",
+      devis: "Devis gratuit et sans engagement à domicile pour tous les travaux de rénovation et installation.",
+      paiement: "Carte, espèces, chèque, virement. Paiement en 3 fois sans frais à partir de 500€. Financement possible pour gros travaux.",
+      aides: "Des aides de l'État sont disponibles pour certains travaux (borne de recharge, rénovation électrique). Nous vous accompagnons dans les démarches.",
+      qualifications: "Artisan qualifié RGE, assuré en responsabilité décennale et civile professionnelle. SIRET disponible sur demande.",
+      weekend: "Permanence urgence assurée le week-end. Supplément de 30€ le samedi après 17h et le dimanche."
     }
   }
 };
@@ -1174,7 +1230,9 @@ const businessQuickBtns = {
   dentaire:   ["Prendre un RDV", "Tarifs & remboursements", "Urgence dentaire", "Horaires"],
   restaurant: ["Réserver une table", "Voir le menu", "Horaires", "Allergènes"],
   coiffure:   ["Prendre un RDV", "Nos tarifs", "Nos prestations", "Horaires"],
-  kiné:       ["Prendre un RDV", "Tarifs & remboursements", "Urgence douleur", "Nos spécialités"]
+  kiné:       ["Prendre un RDV", "Tarifs & remboursements", "Urgence douleur", "Nos spécialités"],
+  plombier:   ["Urgence fuite", "Nos tarifs", "Prendre un RDV", "Horaires"],
+  electricien:["Urgence panne", "Nos tarifs", "Prendre un RDV", "Horaires"]
 };
 
 let currentBusiness = 'garage';
@@ -1256,7 +1314,9 @@ const bizNames = {
   dentaire:   'Meetlify — Cabinet Delorme',
   restaurant: "Meetlify — L'Escale",
   coiffure:   'Meetlify — Salon Amélie',
-  kiné:       'Meetlify — Cabinet Kiné Ravel'
+  kiné:       'Meetlify — Cabinet Kiné Ravel',
+  plombier:   'Meetlify — Plomberie Dupuis',
+  electricien:'Meetlify — Électricité Martin'
 };
 
 function switchBusiness(key) {
